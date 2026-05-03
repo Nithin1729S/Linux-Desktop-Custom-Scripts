@@ -1,36 +1,9 @@
 #!/bin/bash
 
 STATE_FILE="$HOME/.toggle_power_settings_state"
-PIDFILE="/tmp/keepalive_ffmpeg.pid"
 
 strip_uint32() {
     echo "$1" | sed 's/^uint32 //'
-}
-
-keepalive_start() {
-    if [ -f "$PIDFILE" ]; then
-        PID=$(cat "$PIDFILE")
-        if ps -p $PID > /dev/null 2>&1; then
-            return
-        else
-            rm "$PIDFILE"
-        fi
-    fi
-
-    ffmpeg -f lavfi -i "anoisesrc=color=white:amplitude=0.0005" -f pulse default >/dev/null 2>&1 &
-    echo $! > "$PIDFILE"
-    notify-send "KeepAlive" "Started"
-}
-
-keepalive_stop() {
-    if [ -f "$PIDFILE" ]; then
-        PID=$(cat "$PIDFILE")
-        if ps -p $PID > /dev/null 2>&1; then
-            kill $PID
-        fi
-        rm "$PIDFILE"
-        notify-send "KeepAlive" "Stopped"
-    fi
 }
 
 if [ ! -f "$STATE_FILE" ]; then
@@ -52,8 +25,6 @@ if [ ! -f "$STATE_FILE" ]; then
 
     notify-send "Top Performance Mode Activated"
 
-    keepalive_start
-
 else
     mapfile -t settings < "$STATE_FILE"
 
@@ -74,6 +45,4 @@ else
     rm "$STATE_FILE"
 
     notify-send "Normal Mode Activated"
-
-    keepalive_stop
 fi
