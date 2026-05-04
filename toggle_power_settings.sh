@@ -1,6 +1,7 @@
 #!/bin/bash
 
 STATE_FILE="$HOME/.toggle_power_settings_state"
+NOISE_PID_FILE="$HOME/.noise_pid"
 
 strip_uint32() {
     echo "$1" | sed 's/^uint32 //'
@@ -25,6 +26,13 @@ if [ ! -f "$STATE_FILE" ]; then
 
     notify-send "Top Performance Mode Activated"
 
+    (
+        while true; do
+            /usr/bin/play -n -c1 synth 3 whitenoise band -n 1 1 fade h 1 3 1 gain -10000
+        done
+    ) &
+    echo $! > "$NOISE_PID_FILE"
+
 else
     mapfile -t settings < "$STATE_FILE"
 
@@ -41,6 +49,11 @@ else
     gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type $ORIGINAL_BATTERY_TYPE
     gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout $ORIGINAL_AC_TIMEOUT
     gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout $ORIGINAL_BATTERY_TIMEOUT
+
+    if [ -f "$NOISE_PID_FILE" ]; then
+        kill "$(cat "$NOISE_PID_FILE")"
+        rm "$NOISE_PID_FILE"
+    fi
 
     rm "$STATE_FILE"
 
